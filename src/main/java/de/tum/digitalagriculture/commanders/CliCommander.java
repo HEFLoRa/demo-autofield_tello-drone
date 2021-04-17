@@ -1,8 +1,6 @@
 package de.tum.digitalagriculture.commanders;
 
-import de.tum.digitalagriculture.controllers.Controller;
-import de.tum.digitalagriculture.controllers.PrintController;
-import de.tum.digitalagriculture.controllers.Result;
+import de.tum.digitalagriculture.controllers.*;
 import lombok.Cleanup;
 import lombok.Getter;
 import lombok.SneakyThrows;
@@ -11,12 +9,14 @@ import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.net.InetSocketAddress;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 
 public class CliCommander implements Commander {
     @Getter private final  Controller controller;
-    private final Logger logger = LoggerFactory.getLogger(CliCommander.class);
+    private static final Logger logger = LoggerFactory.getLogger(CliCommander.class);
 
     public CliCommander(Controller controller) {
         this.controller = controller;
@@ -33,7 +33,7 @@ public class CliCommander implements Commander {
             try {
                 var command = Commands.Command.parse(input);
                 var result = execute(command);
-                logger.info("Received result: {}", result);
+                logger.info(result.toString());
             } catch (IllegalArgumentException ill) {
                 logger.warn("Invalid input");
             }
@@ -53,7 +53,9 @@ public class CliCommander implements Commander {
         } else {
             ip = "192.168.10.1"; // The ip when connected to the drone directly
         }
-        var controller = new PrintController(500, TimeUnit.MILLISECONDS);
+        @Cleanup var streamHandler = new StreamWriter("/tmp/capture.avi", 30f);
+        @Cleanup var controller = new FlightController(ip, streamHandler,FlightController.ConnectionOption.KEEP_ALIVE);
+//        var controller = new PrintController(500, TimeUnit.MILLISECONDS);
         var commander = new CliCommander(controller);
         commander.run();
     }

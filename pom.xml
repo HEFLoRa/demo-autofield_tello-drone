@@ -33,8 +33,8 @@
     </distributionManagement>
 
     <build>
-        <sourceDirectory>target/generated-sources/delombok</sourceDirectory>
-        <testSourceDirectory>target/generated-test-sources/delombok</testSourceDirectory>
+        <sourceDirectory>${project.build.directory}/delombok</sourceDirectory>
+        <testSourceDirectory>${project.build.directory}/test/delombok</testSourceDirectory>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -67,7 +67,8 @@
                             <goal>delombok</goal>
                         </goals>
                         <configuration>
-                            <addOutputDirectory>false</addOutputDirectory>
+<!--                            <addOutputDirectory>false</addOutputDirectory>-->
+                            <outputDirectory>${project.build.directory}/delombok</outputDirectory>
                             <sourceDirectory>src/main/java</sourceDirectory>
                         </configuration>
                     </execution>
@@ -78,7 +79,8 @@
                             <goal>testDelombok</goal>
                         </goals>
                         <configuration>
-                            <addOutputDirectory>false</addOutputDirectory>
+<!--                            <addOutputDirectory>false</addOutputDirectory>-->
+                            <outputDirectory>${project.build.directory}/test/delombok</outputDirectory>
                             <sourceDirectory>src/test/java</sourceDirectory>
                         </configuration>
                     </execution>
@@ -90,7 +92,7 @@
                 <version>3.2.0</version>
                 <configuration>
                     <defaultVersion>${project.version}</defaultVersion>
-                    <sourcepath>target/generated-sources/delombok</sourcepath>
+                    <sourcepath>${project.build.directory}/delombok</sourcepath>
                 </configuration>
             </plugin>
             <plugin>
@@ -141,6 +143,7 @@
                     <arguments>
                         <argument>-classpath</argument>
                         <classpath></classpath>
+                        <argument>-Djava.util.logging.config.file=${project.basedir}/src/main/resources/logging.properties/</argument>
                         <argument>de.tum.digitalagriculture.commanders.CliCommander</argument>
                     </arguments>
                 </configuration>
@@ -165,6 +168,11 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-jdk14</artifactId>
             <version>1.7.28</version>
+        </dependency>
+        <dependency>
+            <groupId>org.bytedeco</groupId>
+            <artifactId>javacv-platform</artifactId>
+            <version>1.5.5</version>
         </dependency>
     </dependencies>
 

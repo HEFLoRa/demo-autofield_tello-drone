@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
 import java.nio.channels.DatagramChannel;
 import java.util.concurrent.TimeUnit;
 
-public class PrintController implements Controller, StreamHandler {
+public class PrintController implements Controller {
     @Getter
     private boolean streamIsRunning;
     @Getter
@@ -33,25 +33,16 @@ public class PrintController implements Controller, StreamHandler {
             throw new IllegalStateException("Stream already running!");
         } else if (command instanceof Commands.StreamOn) {
             streamIsRunning = true;
-            startStream(null);
+            logger.info("Start stream");
         } else if (command instanceof Commands.StreamOff && !streamIsRunning) {
             throw new IllegalStateException("No stream running!");
         } else if (command instanceof Commands.StreamOff) {
             streamIsRunning = false;
-            stopStream();
+            logger.info("Stop stream");
         }
         logger.info("Executing: {}", command);
         Thread.sleep(unit.toMillis(duration));
         return new Result(Result.ResultEnum.OK,  "ok");
     }
 
-    @Override
-    public void startStream(DatagramChannel channel) {
-        logger.info("Starting stream");
-    }
-
-    @Override
-    public void stopStream() {
-        logger.info("Stopped stream");
-    }
 }

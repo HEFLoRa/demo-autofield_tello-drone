@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.Synchronized;
 
+import org.opencv.core.Mat;
+import org.opencv.videoio.VideoCapture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,44 +16,44 @@ import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.nio.charset.StandardCharsets;
 
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 
-public class FlightController implements Controller, StreamHandler, AutoCloseable {
+public class FlightController implements Controller, AutoCloseable {
     @Getter
     private final ConnectionOption connectionOption;
     @Getter
     private final InetSocketAddress remoteAddress;
+    @Getter
+    private final InetSocketAddress streamAddress;
 
     private final DatagramChannel commandChannel;
     private final DatagramChannel statusChannel;
-    private final DatagramChannel streamChannel;
-
-    private final AtomicBoolean streamIsRunning;
 
     private final ScheduledExecutorService executorService;
+    private final StreamHandler streamHandler;
 
-    private final Logger logger = LoggerFactory.getLogger(FlightController.class);
+    private static final Logger logger = LoggerFactory.getLogger(FlightController.class);
+
+    private ScheduledFuture<?> streamTask;
 
 
     public enum ConnectionOption {
         KEEP_ALIVE, TIME_OUT
     }
 
-    public FlightController(String ip, ConnectionOption connectionOption) {
+    public FlightController(String ip, StreamHandler streamHandler, ConnectionOption connectionOption) {
         this.connectionOption = connectionOption;
         remoteAddress = new InetSocketAddress(ip, 8889);
+        streamAddress = new InetSocketAddress(ip, 11111);
 
-        commandChannel = createChannel(8899);
+        commandChannel = createChannel(8889);
         statusChannel = createChannel(8890);
-        streamChannel = createChannel(11111);
+        this.streamHandler = streamHandler;
+        streamTask = null;
 
         executorService = createScheduler(connectionOption);
-
-        streamIsRunning = new AtomicBoolean(false);
 
         sendAndRecv(new Commands.Init());
     }
@@ -61,6 +63,7 @@ public class FlightController implements Controller, StreamHandler, AutoCloseabl
         var channel = DatagramChannel.open();
         var localAddress = new InetSocketAddress(localPort);
         channel.bind(localAddress);
+        logger.debug("Created channel for port {}", localPort);
         return channel;
     }
 
@@ -73,6 +76,7 @@ public class FlightController implements Controller, StreamHandler, AutoCloseabl
         } else {
             executor = new ScheduledThreadPoolExecutor(numThreads);
         }
+        logger.debug("Created scheduled executor with {}", connectionOption);
         return executor;
     }
 
@@ -94,29 +98,45 @@ public class FlightController implements Controller, StreamHandler, AutoCloseabl
             logger.warn("Reception failed: {}", ioException.getMessage());
             return new Result(Result.ResultEnum.ERROR, ioException.getMessage());
         }
-        var result = Result.parse(StandardCharsets.UTF_8.decode(recvBuffer).toString());
+        recvBuffer.flip();
+        var response = StandardCharsets.UTF_8.decode(recvBuffer).toString();
+        var result = Result.of(command, response);
         logger.debug("Received result: {}", result);
         return result;
     }
 
     @Override
     public Result execute(Commands.Command command) {
-        return sendAndRecv(command);
+        var result = sendAndRecv(command);
+        if (command instanceof Commands.StreamOn) {
+            startStream("udp:/" + remoteAddress.toString());
+        }
+        if (command instanceof Commands.StreamOff) {
+            stopStream();
+        }
+        return result;
     }
 
-    @Override
-    public void startStream(DatagramChannel channel) {
-        if (!streamIsRunning.compareAndSet(false, true)) {
+    private void startStream(String videoPath) {
+        if (streamTask != null) {
             logger.warn("Stream already running!");
+            return;
         }
-
+        streamHandler.startStream(videoPath);
+        var freq = Math.round(1000D/streamHandler.getFps());
+        streamTask = executorService.scheduleAtFixedRate(streamHandler::capture, freq, freq, TimeUnit.MILLISECONDS);
     }
 
-    @Override
-    public void stopStream() {
-        if (!streamIsRunning.compareAndSet(true, false)) {
+    private void stopStream() {
+        if (streamTask == null || !streamHandler.isActive()) {
             logger.warn("No stream running!");
+            return;
         }
+        if (!streamTask.cancel(false)) {
+            logger.warn("Stream could not be cancelled!");
+        }
+        streamTask = null;
+        streamHandler.stopStream();
     }
 
     @Override
@@ -124,6 +144,5 @@ public class FlightController implements Controller, StreamHandler, AutoCloseabl
         executorService.shutdown();
         commandChannel.close();
         statusChannel.close();
-        streamChannel.close();
     }
 }
