@@ -1,13 +1,14 @@
 package de.tum.digitalagriculture.commanders;
 
 import de.tum.digitalagriculture.controllers.Controller;
-import de.tum.digitalagriculture.controllers.PrintController;
+import de.tum.digitalagriculture.controllers.FlightController;
 import de.tum.digitalagriculture.controllers.Result;
+import de.tum.digitalagriculture.controllers.StreamWriter;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-
-import java.util.concurrent.TimeUnit;
+import lombok.SneakyThrows;
+import org.opencv.core.Core;
 
 public class PathCommander implements Commander {
     @Getter
@@ -21,6 +22,29 @@ public class PathCommander implements Commander {
         this.commands = commands;
     }
 
+    @SneakyThrows
+    public static void main(String[] args) {
+        System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
+
+        Commands.Command[] commands = new Commands.Command[]{
+                new Commands.StreamOn(),
+                new Commands.TakeOff(),
+                new Commands.Up(50),
+                new Commands.Forward(100),
+                new Commands.ClockWise(180),
+                new Commands.Forward(100),
+                new Commands.CounterClockWise(180),
+                new Commands.Land(),
+                new Commands.StreamOff(),
+        };
+        var streamHandler = new StreamWriter("/tmp/flight0.avi");
+        var controller = new FlightController("192.168.10.1", streamHandler, FlightController.ConnectionOption.TIME_OUT);
+        var commander = new PathCommander(controller, commands);
+        commander.run();
+        streamHandler.close();
+        controller.close();
+    }
+
     @Override
     public Result execute(Commands.Command command) {
         return controller.execute(command);
@@ -32,17 +56,5 @@ public class PathCommander implements Commander {
             execute(command);
         }
         System.out.println("Finished");
-    }
-
-    public static void main(String[] args) {
-        Commands.Command[] commands = new Commands.Command[]{
-                new Commands.TakeOff(),
-                new Commands.Go(10, 30, 40, 10),
-                new Commands.Up(10),
-                new Commands.Left(30)
-        };
-        var controller = new PrintController(500, TimeUnit.MILLISECONDS);
-        var commander = new PathCommander(controller, commands);
-        commander.run();
     }
 }

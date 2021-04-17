@@ -7,18 +7,16 @@ import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.channels.DatagramChannel;
 import java.util.concurrent.TimeUnit;
 
 public class PrintController implements Controller {
     @Getter
-    private boolean streamIsRunning;
-    @Getter
     private final long duration;
     @Getter
     private final TimeUnit unit;
-
     private final Logger logger = LoggerFactory.getLogger(PrintController.class);
+    @Getter
+    private boolean streamIsRunning;
 
     public PrintController(long duration, TimeUnit unit) {
         this.duration = duration;
@@ -42,7 +40,7 @@ public class PrintController implements Controller {
         }
         logger.info("Executing: {}", command);
         Thread.sleep(unit.toMillis(duration));
-        return new Result(Result.ResultEnum.OK,  "ok");
+        return new Result(Result.ResultEnum.OK, "ok");
     }
 
 }

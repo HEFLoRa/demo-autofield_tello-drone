@@ -1,11 +1,16 @@
 package de.tum.digitalagriculture.controllers;
 
-import java.nio.channels.DatagramChannel;
 
-public interface StreamHandler {
-    void startStream(String videoPath);
-    void capture();
-    float getFps();
-    boolean isActive();
+public interface StreamHandler<S extends StreamHandler.Stream> {
+    S startStream(String streamUrl);
+
+    Boolean hasActiveStream();
+
     void stopStream();
+
+    interface Stream extends AutoCloseable {
+        Double getFps();
+
+        void capture();
+    }
 }

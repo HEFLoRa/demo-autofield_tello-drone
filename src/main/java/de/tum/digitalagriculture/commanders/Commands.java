@@ -3,8 +3,6 @@ package de.tum.digitalagriculture.commanders;
 import lombok.Getter;
 import lombok.NonNull;
 
-import javax.swing.*;
-
 public class Commands {
 
     public abstract static class Command {
@@ -13,11 +11,6 @@ public class Commands {
 
         private Command(@NonNull String command) {
             this.command = command;
-        }
-
-        @Override
-        public String toString() {
-            return getCommand();
         }
 
         public static Command parse(@NonNull String input) {
@@ -125,6 +118,11 @@ public class Commands {
                 }
                 default -> throw new IllegalArgumentException(String.format("Unknown command: %s", command));
             };
+        }
+
+        @Override
+        public String toString() {
+            return getCommand();
         }
     }
 

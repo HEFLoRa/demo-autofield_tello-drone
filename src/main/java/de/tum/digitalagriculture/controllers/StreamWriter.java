@@ -2,7 +2,7 @@ package de.tum.digitalagriculture.controllers;
 
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.Synchronized;
+import lombok.Setter;
 import org.opencv.core.Mat;
 import org.opencv.videoio.VideoCapture;
 import org.opencv.videoio.VideoWriter;
@@ -11,73 +11,84 @@ import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class StreamWriter implements StreamHandler, AutoCloseable {
+import static org.bytedeco.opencv.global.opencv_videoio.CAP_PROP_BUFFERSIZE;
+import static org.bytedeco.opencv.global.opencv_videoio.CAP_PROP_FPS;
+
+public class StreamWriter implements StreamHandler<StreamWriter.Stream>, AutoCloseable {
     private static final Logger logger = LoggerFactory.getLogger(StreamWriter.class);
     @Getter
-    private final String filename;
-    @Getter
-    private final float fps;
-    private VideoCapture capture;
-    private final VideoWriter writer;
-    private final AtomicBoolean isActive;
+    @Setter
+    private String filename;
+    private Stream stream;
 
-    public StreamWriter(String filename, float fps) {
+    public StreamWriter(String filename) {
         this.filename = filename;
-        this.fps = fps;
-        capture = null;
-        isActive = new AtomicBoolean(false);
-        writer = new VideoWriter();
+        stream = null;
     }
 
     @Override
-    @Synchronized
-    public void startStream(@NonNull String videoPath) {
-        if (capture != null || !isActive.compareAndSet(false, true)) {
-            throw new IllegalStateException("There is already a capture active");
+    public Stream startStream(String streamUrl) {
+        if (stream != null) {
+            throw new IllegalStateException("startStream cannot be called if a stream is already running!");
         }
-        capture = new VideoCapture(videoPath);
-        if (!writer.isOpened()) {
-            var codec = VideoWriter.fourcc('M', 'J', 'P', 'G');
-            var mat = new Mat();
-            capture.read(mat);
-            writer.open(filename, codec, fps, mat.size(), true);
-        }
+        stream = new Stream(streamUrl);
+        return stream;
     }
 
     @Override
-    @Synchronized
-    public void capture() {
-        if (capture == null || !isActive()) {
-            throw new IllegalStateException("Capture not running!");
-        }
-        var mat = new Mat();
-        capture.read(mat);
-        if (mat.empty()) {
-            logger.debug("No image captured!");
-        }
-        writer.write(mat);
+    public Boolean hasActiveStream() {
+        return stream != null;
     }
 
     @Override
-    public boolean isActive() {
-        return isActive.get();
-    }
-
-    @Override
-    @Synchronized
     public void stopStream() {
-        if (capture == null || !isActive.compareAndSet(true, false)) {
-            throw new IllegalStateException("No capture active!");
-        }
-        capture.release();
-        capture = null;
+        stream.close();
+        stream = null;
     }
 
     @Override
-    public void close() throws Exception {
-        if (capture != null) {
-            capture.release();
+    public void close() {
+        if (stream != null) {
+            stream.close();
         }
-        writer.release();
+    }
+
+    protected class Stream implements StreamHandler.Stream {
+        final AtomicBoolean isActive;
+        private final VideoCapture capture;
+        private final VideoWriter writer;
+        @Getter
+        private final Double fps;
+
+        Stream(@NonNull String streamUrl) {
+            var url = streamUrl + "?overrun_nonfatal=1&fifi_size=10000000";
+            capture = new VideoCapture(url);
+            capture.set(CAP_PROP_BUFFERSIZE, 1024);
+            var codec = VideoWriter.fourcc('M', 'P', 'J', 'G');
+            var img = new Mat();
+            capture.read(img);
+            fps = capture.get(CAP_PROP_FPS);
+            writer = new VideoWriter(filename, codec, fps, img.size(), true);
+            isActive = new AtomicBoolean(true);
+        }
+
+        @Override
+        public void capture() {
+            if (!capture.isOpened()) {
+                throw new IllegalStateException("Capture not running!");
+            }
+            var img = new Mat();
+            while (isActive.get()) {
+                capture.read(img);
+                writer.write(img);
+            }
+        }
+
+        @Override
+        public void close() {
+            isActive.set(false);
+            capture.release();
+            writer.release();
+        }
     }
 }

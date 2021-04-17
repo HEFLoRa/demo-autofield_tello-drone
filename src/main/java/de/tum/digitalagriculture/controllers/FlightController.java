@@ -4,9 +4,6 @@ import de.tum.digitalagriculture.commanders.Commands;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.Synchronized;
-
-import org.opencv.core.Mat;
-import org.opencv.videoio.VideoCapture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,35 +12,25 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 
-
-public class FlightController implements Controller, AutoCloseable {
+public class FlightController<S extends StreamHandler.Stream> implements Controller, AutoCloseable {
+    private static final Logger logger = LoggerFactory.getLogger(FlightController.class);
     @Getter
     private final ConnectionOption connectionOption;
     @Getter
     private final InetSocketAddress remoteAddress;
     @Getter
     private final InetSocketAddress streamAddress;
-
     private final DatagramChannel commandChannel;
     private final DatagramChannel statusChannel;
-
     private final ScheduledExecutorService executorService;
-    private final StreamHandler streamHandler;
+    private final StreamHandler<S> streamHandler;
 
-    private static final Logger logger = LoggerFactory.getLogger(FlightController.class);
-
-    private ScheduledFuture<?> streamTask;
-
-
-    public enum ConnectionOption {
-        KEEP_ALIVE, TIME_OUT
-    }
-
-    public FlightController(String ip, StreamHandler streamHandler, ConnectionOption connectionOption) {
+    public FlightController(String ip, StreamHandler<S> streamHandler, ConnectionOption connectionOption) {
         this.connectionOption = connectionOption;
         remoteAddress = new InetSocketAddress(ip, 8889);
         streamAddress = new InetSocketAddress(ip, 11111);
@@ -51,8 +38,6 @@ public class FlightController implements Controller, AutoCloseable {
         commandChannel = createChannel(8889);
         statusChannel = createChannel(8890);
         this.streamHandler = streamHandler;
-        streamTask = null;
-
         executorService = createScheduler(connectionOption);
 
         sendAndRecv(new Commands.Init());
@@ -109,7 +94,7 @@ public class FlightController implements Controller, AutoCloseable {
     public Result execute(Commands.Command command) {
         var result = sendAndRecv(command);
         if (command instanceof Commands.StreamOn) {
-            startStream("udp:/" + remoteAddress.toString());
+            startStream("udp:/" + streamAddress.toString());
         }
         if (command instanceof Commands.StreamOff) {
             stopStream();
@@ -117,25 +102,19 @@ public class FlightController implements Controller, AutoCloseable {
         return result;
     }
 
-    private void startStream(String videoPath) {
-        if (streamTask != null) {
-            logger.warn("Stream already running!");
-            return;
-        }
-        streamHandler.startStream(videoPath);
-        var freq = Math.round(1000D/streamHandler.getFps());
-        streamTask = executorService.scheduleAtFixedRate(streamHandler::capture, freq, freq, TimeUnit.MILLISECONDS);
+    private void startStream(String streamUrl) {
+        var stream = streamHandler.startStream(streamUrl);
+        var freq = Math.round(1000D / stream.getFps());
+        executorService.submit(stream::capture);
     }
 
     private void stopStream() {
-        if (streamTask == null || !streamHandler.isActive()) {
+        if (!streamHandler.hasActiveStream()) {
             logger.warn("No stream running!");
             return;
         }
-        if (!streamTask.cancel(false)) {
-            logger.warn("Stream could not be cancelled!");
-        }
-        streamTask = null;
+        System.out.println("We are before stop stream");
+        System.out.println("We are after stop stream");
         streamHandler.stopStream();
     }
 
@@ -144,5 +123,9 @@ public class FlightController implements Controller, AutoCloseable {
         executorService.shutdown();
         commandChannel.close();
         statusChannel.close();
+    }
+
+    public enum ConnectionOption {
+        KEEP_ALIVE, TIME_OUT
     }
 }
