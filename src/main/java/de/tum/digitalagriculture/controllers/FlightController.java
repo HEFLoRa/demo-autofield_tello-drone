@@ -17,9 +17,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 
-public class FlightController implements Controller, AutoCloseable {
+public class FlightController implements Controller, StreamHandler, AutoCloseable {
     @Getter
     private final ConnectionOption connectionOption;
     @Getter
@@ -28,6 +29,8 @@ public class FlightController implements Controller, AutoCloseable {
     private final DatagramChannel commandChannel;
     private final DatagramChannel statusChannel;
     private final DatagramChannel streamChannel;
+
+    private final AtomicBoolean streamIsRunning;
 
     private final ScheduledExecutorService executorService;
 
@@ -47,6 +50,10 @@ public class FlightController implements Controller, AutoCloseable {
         streamChannel = createChannel(11111);
 
         executorService = createScheduler(connectionOption);
+
+        streamIsRunning = new AtomicBoolean(false);
+
+        sendAndRecv(new Commands.Init());
     }
 
     @SneakyThrows
@@ -98,13 +105,18 @@ public class FlightController implements Controller, AutoCloseable {
     }
 
     @Override
-    public void readStream() {
+    public void startStream(DatagramChannel channel) {
+        if (!streamIsRunning.compareAndSet(false, true)) {
+            logger.warn("Stream already running!");
+        }
 
     }
 
     @Override
     public void stopStream() {
-
+        if (!streamIsRunning.compareAndSet(true, false)) {
+            logger.warn("No stream running!");
+        }
     }
 
     @Override

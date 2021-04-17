@@ -7,9 +7,10 @@ import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.channels.DatagramChannel;
 import java.util.concurrent.TimeUnit;
 
-public class PrintController implements Controller {
+public class PrintController implements Controller, StreamHandler {
     @Getter
     private boolean streamIsRunning;
     @Getter
@@ -32,7 +33,7 @@ public class PrintController implements Controller {
             throw new IllegalStateException("Stream already running!");
         } else if (command instanceof Commands.StreamOn) {
             streamIsRunning = true;
-            readStream();
+            startStream(null);
         } else if (command instanceof Commands.StreamOff && !streamIsRunning) {
             throw new IllegalStateException("No stream running!");
         } else if (command instanceof Commands.StreamOff) {
@@ -45,7 +46,7 @@ public class PrintController implements Controller {
     }
 
     @Override
-    public void readStream() {
+    public void startStream(DatagramChannel channel) {
         logger.info("Starting stream");
     }
 

@@ -5,6 +5,4 @@ import lombok.NonNull;
 
 public interface Controller {
     Result execute(@NonNull Commands.Command command);
-    void readStream();
-    void stopStream();
 }
