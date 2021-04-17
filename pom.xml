@@ -15,21 +15,22 @@
         <maven.compiler.target>16</maven.compiler.target>
     </properties>
 
-    <dependencies>
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>1.18.20</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-engine</artifactId>
-            <version>5.7.1</version>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
-
+    <repositories>
+        <repository>
+            <id>gitlab-lrz-maven</id>
+            <url>https://gitlab.lrz.de/api/v4/groups/38067/-/packages/maven</url>
+        </repository>
+    </repositories>
+    <distributionManagement>
+        <repository>
+            <id>gitlab-lrz-maven</id>
+            <url>https://gitlab.lrz.de/api/v4/projects/79201/packages/maven</url>
+        </repository>
+        <snapshotRepository>
+            <id>gitlab-lrz-maven</id>
+            <url>https://gitlab.lrz.de/api/v4/projects/79201/packages/maven</url>
+        </snapshotRepository>
+    </distributionManagement>
 
     <build>
         <sourceDirectory>target/generated-sources/delombok</sourceDirectory>
@@ -147,22 +148,25 @@
         </plugins>
     </build>
 
-    <repositories>
-        <repository>
-            <id>gitlab-lrz-maven</id>
-            <url>https://gitlab.lrz.de/api/v4/groups/38067/-/packages/maven</url>
-        </repository>
-    </repositories>
-    <distributionManagement>
-        <repository>
-            <id>gitlab-lrz-maven</id>
-            <url>https://gitlab.lrz.de/api/v4/projects/79201/packages/maven</url>
-        </repository>
-        <snapshotRepository>
-            <id>gitlab-lrz-maven</id>
-            <url>https://gitlab.lrz.de/api/v4/projects/79201/packages/maven</url>
-        </snapshotRepository>
-    </distributionManagement>
+    <dependencies>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.20</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>5.7.1</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-jdk14</artifactId>
+            <version>1.7.28</version>
+        </dependency>
+    </dependencies>
 
 
 </project>
