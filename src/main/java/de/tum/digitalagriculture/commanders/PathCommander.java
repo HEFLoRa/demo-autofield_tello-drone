@@ -3,7 +3,7 @@ package de.tum.digitalagriculture.commanders;
 import de.tum.digitalagriculture.controllers.Controller;
 import de.tum.digitalagriculture.controllers.FlightController;
 import de.tum.digitalagriculture.controllers.Result;
-import de.tum.digitalagriculture.controllers.StreamWriter;
+import de.tum.digitalagriculture.streams.StreamWriter;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;

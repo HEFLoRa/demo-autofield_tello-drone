@@ -1,6 +1,7 @@
 package de.tum.digitalagriculture.controllers;
 
 import de.tum.digitalagriculture.commanders.Commands;
+import de.tum.digitalagriculture.streams.StreamHandler;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.Synchronized;

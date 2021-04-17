@@ -1,4 +1,4 @@
-package de.tum.digitalagriculture.controllers;
+package de.tum.digitalagriculture.streams;
 
 import lombok.Getter;
 import lombok.NonNull;

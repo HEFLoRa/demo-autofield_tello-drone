@@ -1,4 +1,4 @@
-package de.tum.digitalagriculture.controllers;
+package de.tum.digitalagriculture.streams;
 
 
 public interface StreamHandler<S extends StreamHandler.Stream> {
