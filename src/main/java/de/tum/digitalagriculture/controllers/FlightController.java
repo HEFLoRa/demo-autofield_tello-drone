@@ -58,7 +58,7 @@ public class FlightController<S extends StreamHandler.Stream> implements Control
         ScheduledThreadPoolExecutor executor;
         if (connectionOption == ConnectionOption.KEEP_ALIVE) {
             executor = new ScheduledThreadPoolExecutor(numThreads + 1);
-            executor.scheduleAtFixedRate(() -> this.sendAndRecv(new Commands.ReadBattery()), 10, 10, TimeUnit.SECONDS);
+            executor.scheduleAtFixedRate(() -> sendAndRecv(new Commands.ReadBattery()), 10, 10, TimeUnit.SECONDS);
         } else {
             executor = new ScheduledThreadPoolExecutor(numThreads);
         }
