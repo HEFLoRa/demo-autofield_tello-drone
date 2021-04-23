@@ -37,7 +37,7 @@ before_script:
       <toolchain>
           <type>jdk</type>
           <provides>
-              <version>${JAVA_VERSION}</version>
+              <version>16</version>
               <vendor>oracle</vendor>
           </provides>
           <configuration>
