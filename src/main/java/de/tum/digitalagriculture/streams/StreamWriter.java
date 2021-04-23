@@ -28,8 +28,10 @@ public class StreamWriter implements StreamHandler<StreamWriter.Stream>, AutoClo
 
     @Override
     public Stream startStream(String streamUrl) {
-        if (stream != null) {
+        if (hasActiveStream()) {
             throw new IllegalStateException("startStream cannot be called if a stream is already running!");
+        } else if (stream != null) {
+            stream.close();
         }
         stream = new Stream(streamUrl);
         return stream;
@@ -37,13 +39,12 @@ public class StreamWriter implements StreamHandler<StreamWriter.Stream>, AutoClo
 
     @Override
     public Boolean hasActiveStream() {
-        return stream != null;
+        return stream != null && stream.isActive.get();
     }
 
     @Override
     public void stopStream() {
-        stream.close();
-        stream = null;
+        stream.isActive.set(false);
     }
 
     @Override
