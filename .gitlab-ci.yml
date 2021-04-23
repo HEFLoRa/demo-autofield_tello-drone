@@ -37,7 +37,7 @@ before_script:
       <toolchain>
           <type>jdk</type>
           <provides>
-              <version>${JAVA_VERSION}</version>
+              <version>16</version>
               <vendor>oracle</vendor>
           </provides>
           <configuration>
@@ -51,11 +51,13 @@ before_script:
 
 cache:
   paths:
-    - .m2/repository
+    - $HOME/.m2/repository
 
 build:
   stage: build
-  script: 'mvn $MAVEN_CLI_OPTS compile'
+  script: 
+    - echo $JAVA_VERSION
+    - 'mvn $MAVEN_CLI_OPTS compile'
 
 test:
   stage: test
