@@ -7,7 +7,8 @@ import de.tum.digitalagriculture.streams.StreamWriter;
 import lombok.Cleanup;
 import lombok.Getter;
 import lombok.SneakyThrows;
-import org.opencv.core.Core;
+import org.bytedeco.javacpp.Loader;
+import org.bytedeco.opencv.opencv_java;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,7 +27,8 @@ public class CliCommander implements Commander {
 
     @SneakyThrows
     public static void main(String[] args) {
-        System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
+        // Load OpenCV -> needs to be done bc. its a non-JVM library
+        Loader.load(opencv_java.class);
 
         final String ip;
         if (args.length == 1) {

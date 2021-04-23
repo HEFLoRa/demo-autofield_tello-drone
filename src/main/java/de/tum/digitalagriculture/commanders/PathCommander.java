@@ -38,7 +38,7 @@ public class PathCommander implements Commander {
                 new Commands.StreamOff(),
         };
         var streamHandler = new StreamWriter("/tmp/flight0.avi");
-        var controller = new FlightController("192.168.10.1", streamHandler, FlightController.ConnectionOption.TIME_OUT);
+        var controller = new FlightController<>("192.168.10.1", streamHandler, FlightController.ConnectionOption.TIME_OUT);
         var commander = new PathCommander(controller, commands);
         commander.run();
         streamHandler.close();

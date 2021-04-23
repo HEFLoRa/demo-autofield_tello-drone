@@ -3,6 +3,8 @@ package de.tum.digitalagriculture.streams;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import org.bytedeco.javacpp.Loader;
+import org.bytedeco.opencv.opencv_java;
 import org.opencv.core.Mat;
 import org.opencv.videoio.VideoCapture;
 import org.opencv.videoio.VideoWriter;
