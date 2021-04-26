@@ -1,10 +1,10 @@
-# Central Hub
+# Tello
 
 [![pipeline status](https://gitlab.lrz.de/digital-agriculture/tello/badges/main/pipeline.svg)](https://gitlab.lrz.de/digital-agriculture/tello/-/commits/main)
 [![docs](https://img.shields.io/badge/docs-javadoc-blue)](https://digital-agriculture.pages.gitlab.lrz.de/tello/)
 [![coverage report](https://gitlab.lrz.de/digital-agriculture/tello/badges/main/coverage.svg)](https://gitlab.lrz.de/digital-agriculture/tello/-/commits/main)
 
-Code for the Central Hub of the IDP.
+Code to control the DJI Tello drone of the IDP.
 
 ## Requirements
 - [JDK Version 16](https://jdk.java.net/16/)
