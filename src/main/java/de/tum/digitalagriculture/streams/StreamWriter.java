@@ -3,16 +3,14 @@ package de.tum.digitalagriculture.streams;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-import org.opencv.core.Mat;
-import org.opencv.videoio.VideoCapture;
-import org.opencv.videoio.VideoWriter;
+import lombok.SneakyThrows;
+import org.bytedeco.javacv.FFmpegFrameGrabber;
+import org.bytedeco.javacv.OpenCVFrameConverter;
+import org.bytedeco.opencv.opencv_videoio.VideoWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import static org.bytedeco.opencv.global.opencv_videoio.CAP_PROP_BUFFERSIZE;
-import static org.bytedeco.opencv.global.opencv_videoio.CAP_PROP_FPS;
 
 public class StreamWriter implements StreamHandler<StreamWriter.Stream>, AutoCloseable {
     private static final Logger logger = LoggerFactory.getLogger(StreamWriter.class);
@@ -26,6 +24,7 @@ public class StreamWriter implements StreamHandler<StreamWriter.Stream>, AutoClo
         stream = null;
     }
 
+    @SneakyThrows
     @Override
     public Stream startStream(String streamUrl) {
         if (hasActiveStream()) {
@@ -48,7 +47,7 @@ public class StreamWriter implements StreamHandler<StreamWriter.Stream>, AutoClo
     }
 
     @Override
-    public void close() {
+    public void close() throws FFmpegFrameGrabber.Exception {
         if (stream != null) {
             stream.close();
         }
@@ -56,41 +55,48 @@ public class StreamWriter implements StreamHandler<StreamWriter.Stream>, AutoClo
 
     protected class Stream implements StreamHandler.Stream {
         private final AtomicBoolean isActive;
-        private final VideoCapture capture;
+        private final FFmpegFrameGrabber capture;
         private final VideoWriter writer;
+        private final OpenCVFrameConverter.ToMat converter;
         @Getter
         private final Double fps;
 
+        @SneakyThrows
         private Stream(@NonNull String streamUrl) {
-            var url = streamUrl + "?overrun_nonfatal=1&fifi_size=10000000";
-            capture = new VideoCapture(url);
-            capture.set(CAP_PROP_BUFFERSIZE, 1024);
-            var codec = VideoWriter.fourcc('M', 'P', 'J', 'G');
-            var img = new Mat();
-            capture.read(img);
-            fps = capture.get(CAP_PROP_FPS);
+            var url = streamUrl + "?overrun_nonfatal=1";
+            converter = new OpenCVFrameConverter.ToMat();
+            capture = new FFmpegFrameGrabber(url);
+            capture.setNumBuffers(1024);
+            capture.start();
+            fps = capture.getVideoFrameRate();
+            var frame = capture.grabImage();
+            var img = converter.convert(frame);
+            var codec = VideoWriter.fourcc((byte) 'M', (byte) 'P', (byte) 'J', (byte) 'G');
             writer = new VideoWriter(filename, codec, fps, img.size(), true);
             isActive = new AtomicBoolean(true);
 
         }
 
+        @SneakyThrows
         @Override
         public void capture() {
-            if (!capture.isOpened()) {
+            if (!capture.hasVideo()) {
                 throw new IllegalStateException("Capture not running!");
             }
-            var img = new Mat();
-            while (capture.isOpened() && isActive.get()) {
-                capture.read(img);
+            while (capture.hasVideo() && isActive.get()) {
+                var frame = capture.grabImage();
+                var img = converter.convert(frame);
                 writer.write(img);
             }
+            capture.stop();
             capture.release();
             writer.release();
         }
 
         @Override
-        public void close() {
+        public void close() throws FFmpegFrameGrabber.Exception {
             isActive.set(false);
+            capture.stop();
             capture.release();
             writer.release();
         }

@@ -3,7 +3,6 @@ package de.tum.digitalagriculture.commanders;
 import de.tum.digitalagriculture.controllers.Controller;
 import de.tum.digitalagriculture.controllers.FlightController;
 import de.tum.digitalagriculture.controllers.Result;
-import de.tum.digitalagriculture.streams.StreamDisplay;
 import de.tum.digitalagriculture.streams.StreamWriter;
 import lombok.Cleanup;
 import lombok.Getter;
@@ -39,7 +38,7 @@ public class CliCommander implements Commander {
             ip = "192.168.10.1"; // The ip when connected to the drone directly
         }
         var executor = new ScheduledThreadPoolExecutor(8);
-        var streamHandler = new StreamDisplay();
+        var streamHandler = new StreamWriter("/tmp/capture0.avi");
         @Cleanup var controller = new FlightController<>(ip, executor, streamHandler, FlightController.ConnectionOption.KEEP_ALIVE);
 //        var controller = new PrintController(500, TimeUnit.MILLISECONDS);
         var commander = new CliCommander(controller);

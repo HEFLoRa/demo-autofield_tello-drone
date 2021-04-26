@@ -1,16 +1,16 @@
 package de.tum.digitalagriculture.streams;
 
 import lombok.Getter;
-import org.opencv.core.Mat;
-import org.opencv.videoio.VideoCapture;
+import lombok.SneakyThrows;
+import org.bytedeco.javacv.FFmpegFrameGrabber;
+import org.bytedeco.javacv.FrameGrabber;
+import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.bytedeco.opencv.global.opencv_videoio.CAP_PROP_FPS;
-import static org.opencv.highgui.HighGui.destroyAllWindows;
-import static org.opencv.highgui.HighGui.imshow;
+import static org.bytedeco.opencv.global.opencv_highgui.*;
 
 public class StreamDisplay implements StreamHandler<StreamDisplay.Stream> {
     private static final Logger logger = LoggerFactory.getLogger(StreamDisplay.class);
@@ -22,7 +22,8 @@ public class StreamDisplay implements StreamHandler<StreamDisplay.Stream> {
     }
 
     @Override
-    public Stream startStream(String streamUrl) {
+    @SneakyThrows
+    public Stream startStream(String streamUrl)  {
         if (hasActiveStream()) {
             throw new IllegalStateException("startStream cannot be called if a stream is already running!");
         } else if (stream != null) {
@@ -44,42 +45,44 @@ public class StreamDisplay implements StreamHandler<StreamDisplay.Stream> {
 
     protected static class Stream implements StreamHandler.Stream {
         private final AtomicBoolean isActive;
-        private final VideoCapture capture;
+        private final FFmpegFrameGrabber capture;
         @Getter
         private final Double fps;
-        private final String url;
 
+        @SneakyThrows
         private Stream(String streamUrl) {
-            url = streamUrl;
-            capture = new VideoCapture(streamUrl);
-            fps = capture.get(CAP_PROP_FPS);
-            var img = new Mat();
-            capture.read(img);
+            // Use small buffer size to decrease latency
+            capture = new FFmpegFrameGrabber(streamUrl + "?fifo_size=0&overrun_nonfatal=1");
+            capture.setNumBuffers(0);
+            capture.start();
+            fps = capture.getFrameRate();
             isActive = new AtomicBoolean(true);
-            logger.debug("{}", streamUrl);
-            logger.debug("{}", capture.isOpened());
-            logger.debug("{}", fps);
         }
 
         @Override
+        @SneakyThrows
         public void capture() {
-            if (!capture.isOpened()) {
+            if (!capture.hasVideo()) {
                 throw new IllegalStateException("Capture not running!");
             }
-            var img = new Mat();
-            while (capture.isOpened() && isActive.get()) {
-                capture.read(img);
-                logger.debug("Capturing");
+            var converter = new OpenCVFrameConverter.ToMat();
+            while (capture.hasVideo() && isActive.get()) {
+                var frame = capture.grabImage();
+                var img = converter.convert(frame);
                 imshow("Feed", img);
+                waitKey(1000/fps.intValue());
             }
+            capture.stop();
             capture.release();
             destroyAllWindows();
         }
 
         @Override
-        public void close() {
+        public void close() throws FrameGrabber.Exception {
             isActive.set(false);
+            capture.stop();
             capture.release();
+            capture.close();
             destroyAllWindows();
         }
     }

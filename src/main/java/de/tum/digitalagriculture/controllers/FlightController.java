@@ -5,7 +5,6 @@ import de.tum.digitalagriculture.streams.StreamHandler;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.Synchronized;
-import org.bytedeco.opencv.presets.opencv_core;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -96,10 +95,9 @@ public class FlightController<S extends StreamHandler.Stream> implements Control
 
     @SneakyThrows
     private void startStream(String streamUrl) {
-//        var stream = streamHandler.startStream(streamUrl);
-//        logger.debug("Starting stream!");
-//        var future = executor.submit(stream::capture);
-//        future.get();
+        var stream = streamHandler.startStream(streamUrl);
+        logger.debug("Starting stream!");
+        executor.submit(stream::capture);
     }
 
     private void stopStream() {

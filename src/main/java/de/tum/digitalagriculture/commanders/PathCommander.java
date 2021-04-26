@@ -8,7 +8,8 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.SneakyThrows;
-import org.opencv.core.Core;
+import org.bytedeco.javacpp.Loader;
+import org.bytedeco.opencv.opencv_java;
 
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
@@ -26,7 +27,7 @@ public class PathCommander implements Commander {
 
     @SneakyThrows
     public static void main(String[] args) {
-        System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
+        Loader.load(opencv_java.class);
 
         Commands.Command[] commands = new Commands.Command[]{
                 new Commands.StreamOn(),
