@@ -1,29 +1,24 @@
 package de.tum.digitalagriculture.streams;
 
 import lombok.Getter;
-import lombok.NonNull;
-import lombok.Setter;
 import org.opencv.core.Mat;
 import org.opencv.videoio.VideoCapture;
-import org.opencv.videoio.VideoWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.bytedeco.opencv.global.opencv_videoio.CAP_PROP_BUFFERSIZE;
 import static org.bytedeco.opencv.global.opencv_videoio.CAP_PROP_FPS;
+import static org.opencv.highgui.HighGui.destroyAllWindows;
+import static org.opencv.highgui.HighGui.imshow;
 
-public class StreamWriter implements StreamHandler<StreamWriter.Stream>, AutoCloseable {
-    private static final Logger logger = LoggerFactory.getLogger(StreamWriter.class);
-    @Getter
-    @Setter
-    private String filename;
+public class StreamDisplay implements StreamHandler<StreamDisplay.Stream> {
+    private static final Logger logger = LoggerFactory.getLogger(StreamDisplay.class);
+
     private Stream stream;
 
-    public StreamWriter(String filename) {
-        this.filename = filename;
-        stream = null;
+    public StreamDisplay() {
+        this.stream = null;
     }
 
     @Override
@@ -47,31 +42,23 @@ public class StreamWriter implements StreamHandler<StreamWriter.Stream>, AutoClo
         stream.isActive.set(false);
     }
 
-    @Override
-    public void close() {
-        if (stream != null) {
-            stream.close();
-        }
-    }
-
-    protected class Stream implements StreamHandler.Stream {
+    protected static class Stream implements StreamHandler.Stream {
         private final AtomicBoolean isActive;
         private final VideoCapture capture;
-        private final VideoWriter writer;
         @Getter
         private final Double fps;
+        private final String url;
 
-        private Stream(@NonNull String streamUrl) {
-            var url = streamUrl + "?overrun_nonfatal=1&fifi_size=10000000";
-            capture = new VideoCapture(url);
-            capture.set(CAP_PROP_BUFFERSIZE, 1024);
-            var codec = VideoWriter.fourcc('M', 'P', 'J', 'G');
+        private Stream(String streamUrl) {
+            url = streamUrl;
+            capture = new VideoCapture(streamUrl);
+            fps = capture.get(CAP_PROP_FPS);
             var img = new Mat();
             capture.read(img);
-            fps = capture.get(CAP_PROP_FPS);
-            writer = new VideoWriter(filename, codec, fps, img.size(), true);
             isActive = new AtomicBoolean(true);
-
+            logger.debug("{}", streamUrl);
+            logger.debug("{}", capture.isOpened());
+            logger.debug("{}", fps);
         }
 
         @Override
@@ -82,17 +69,19 @@ public class StreamWriter implements StreamHandler<StreamWriter.Stream>, AutoClo
             var img = new Mat();
             while (capture.isOpened() && isActive.get()) {
                 capture.read(img);
-                writer.write(img);
+                logger.debug("Capturing");
+                imshow("Feed", img);
             }
             capture.release();
-            writer.release();
+            destroyAllWindows();
         }
 
         @Override
         public void close() {
             isActive.set(false);
             capture.release();
-            writer.release();
+            destroyAllWindows();
         }
     }
+
 }
