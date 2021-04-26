@@ -1,32 +1,29 @@
 package de.tum.digitalagriculture.streams;
 
 import lombok.Getter;
-import lombok.NonNull;
-import lombok.Setter;
 import lombok.SneakyThrows;
 import org.bytedeco.javacv.FFmpegFrameGrabber;
+import org.bytedeco.javacv.FrameGrabber;
 import org.bytedeco.javacv.OpenCVFrameConverter;
-import org.bytedeco.opencv.opencv_videoio.VideoWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class StreamWriter implements StreamHandler<StreamWriter.Stream>, AutoCloseable {
-    private static final Logger logger = LoggerFactory.getLogger(StreamWriter.class);
-    @Getter
-    @Setter
-    private String filename;
+import static org.bytedeco.opencv.global.opencv_highgui.*;
+
+public class StreamDisplay implements StreamHandler<StreamDisplay.Stream> {
+    private static final Logger logger = LoggerFactory.getLogger(StreamDisplay.class);
+
     private Stream stream;
 
-    public StreamWriter(String filename) {
-        this.filename = filename;
-        stream = null;
+    public StreamDisplay() {
+        this.stream = null;
     }
 
-    @SneakyThrows
     @Override
-    public Stream startStream(String streamUrl) {
+    @SneakyThrows
+    public Stream startStream(String streamUrl)  {
         if (hasActiveStream()) {
             throw new IllegalStateException("startStream cannot be called if a stream is already running!");
         } else if (stream != null) {
@@ -46,59 +43,48 @@ public class StreamWriter implements StreamHandler<StreamWriter.Stream>, AutoClo
         stream.isActive.set(false);
     }
 
-    @Override
-    public void close() throws FFmpegFrameGrabber.Exception {
-        if (stream != null) {
-            stream.close();
-        }
-    }
-
-    protected class Stream implements StreamHandler.Stream {
+    protected static class Stream implements StreamHandler.Stream {
         private final AtomicBoolean isActive;
         private final FFmpegFrameGrabber capture;
-        private final VideoWriter writer;
-        private final OpenCVFrameConverter.ToMat converter;
         @Getter
         private final Double fps;
 
         @SneakyThrows
-        private Stream(@NonNull String streamUrl) {
-            var url = streamUrl + "?overrun_nonfatal=1";
-            converter = new OpenCVFrameConverter.ToMat();
-            capture = new FFmpegFrameGrabber(url);
-            capture.setNumBuffers(1024);
+        private Stream(String streamUrl) {
+            // Use small buffer size to decrease latency
+            capture = new FFmpegFrameGrabber(streamUrl + "?fifo_size=0&overrun_nonfatal=1");
+            capture.setNumBuffers(0);
             capture.start();
-            fps = capture.getVideoFrameRate();
-            var frame = capture.grabImage();
-            var img = converter.convert(frame);
-            var codec = VideoWriter.fourcc((byte) 'M', (byte) 'P', (byte) 'J', (byte) 'G');
-            writer = new VideoWriter(filename, codec, fps, img.size(), true);
+            fps = capture.getFrameRate();
             isActive = new AtomicBoolean(true);
-
         }
 
-        @SneakyThrows
         @Override
+        @SneakyThrows
         public void capture() {
             if (!capture.hasVideo()) {
                 throw new IllegalStateException("Capture not running!");
             }
+            var converter = new OpenCVFrameConverter.ToMat();
             while (capture.hasVideo() && isActive.get()) {
                 var frame = capture.grabImage();
                 var img = converter.convert(frame);
-                writer.write(img);
+                imshow("Feed", img);
+                waitKey(1000/fps.intValue());
             }
             capture.stop();
             capture.release();
-            writer.release();
+            destroyAllWindows();
         }
 
         @Override
-        public void close() throws FFmpegFrameGrabber.Exception {
+        public void close() throws FrameGrabber.Exception {
             isActive.set(false);
             capture.stop();
             capture.release();
-            writer.release();
+            capture.close();
+            destroyAllWindows();
         }
     }
+
 }

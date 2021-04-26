@@ -9,8 +9,6 @@ public interface StreamHandler<S extends StreamHandler.Stream> {
     void stopStream();
 
     interface Stream extends AutoCloseable {
-        Double getFps();
-
         void capture();
     }
 }

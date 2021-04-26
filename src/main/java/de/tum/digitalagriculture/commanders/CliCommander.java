@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 
 public class CliCommander implements Commander {
@@ -36,8 +37,9 @@ public class CliCommander implements Commander {
         } else {
             ip = "192.168.10.1"; // The ip when connected to the drone directly
         }
-        var streamHandler = new StreamWriter("/tmp/capture0.webm");
-        @Cleanup var controller = new FlightController<>(ip, streamHandler, FlightController.ConnectionOption.KEEP_ALIVE);
+        var executor = new ScheduledThreadPoolExecutor(8);
+        var streamHandler = new StreamWriter("/tmp/capture0.avi");
+        @Cleanup var controller = new FlightController<>(ip, executor, streamHandler, FlightController.ConnectionOption.KEEP_ALIVE);
 //        var controller = new PrintController(500, TimeUnit.MILLISECONDS);
         var commander = new CliCommander(controller);
         commander.run();

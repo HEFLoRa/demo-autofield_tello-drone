@@ -14,7 +14,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 
@@ -25,22 +24,25 @@ public class FlightController<S extends StreamHandler.Stream> implements Control
     @Getter
     private final InetSocketAddress remoteAddress;
     @Getter
-    private final InetSocketAddress streamAddress;
+    private final String streamAddress;
     private final DatagramChannel commandChannel;
     private final DatagramChannel statusChannel;
-    private final ScheduledExecutorService executorService;
+    private final ScheduledExecutorService executor;
     private final StreamHandler<S> streamHandler;
 
-    public FlightController(String ip, StreamHandler<S> streamHandler, ConnectionOption connectionOption) {
+    public FlightController(String ip, ScheduledExecutorService executor, StreamHandler<S> streamHandler, ConnectionOption connectionOption) {
         this.connectionOption = connectionOption;
         remoteAddress = new InetSocketAddress(ip, 8889);
-        streamAddress = new InetSocketAddress(ip, 11111);
-
+        streamAddress = "udp://0.0.0.0:11111";
         commandChannel = createChannel(8889);
         statusChannel = createChannel(8890);
         this.streamHandler = streamHandler;
-        executorService = createScheduler(connectionOption);
 
+        this.executor = executor;
+        if (connectionOption == ConnectionOption.KEEP_ALIVE) {
+            executor.scheduleAtFixedRate(() -> sendAndRecv(new Commands.ReadBattery()), 14, 14, TimeUnit.SECONDS);
+            logger.debug("Scheduled keep alive!");
+        }
         sendAndRecv(new Commands.Init());
     }
 
@@ -53,18 +55,6 @@ public class FlightController<S extends StreamHandler.Stream> implements Control
         return channel;
     }
 
-    private ScheduledExecutorService createScheduler(ConnectionOption connectionOption) {
-        var numThreads = 2;
-        ScheduledThreadPoolExecutor executor;
-        if (connectionOption == ConnectionOption.KEEP_ALIVE) {
-            executor = new ScheduledThreadPoolExecutor(numThreads + 1);
-            executor.scheduleAtFixedRate(() -> sendAndRecv(new Commands.ReadBattery()), 10, 10, TimeUnit.SECONDS);
-        } else {
-            executor = new ScheduledThreadPoolExecutor(numThreads);
-        }
-        logger.debug("Created scheduled executor with {}", connectionOption);
-        return executor;
-    }
 
     @Synchronized
     private Result sendAndRecv(Commands.Command command) {
@@ -95,7 +85,7 @@ public class FlightController<S extends StreamHandler.Stream> implements Control
     public Result execute(Commands.Command command) {
         var result = sendAndRecv(command);
         if (command instanceof Commands.StreamOn) {
-            startStream("udp:/" + streamAddress.toString());
+            startStream(streamAddress);
         }
         if (command instanceof Commands.StreamOff) {
             stopStream();
@@ -103,10 +93,11 @@ public class FlightController<S extends StreamHandler.Stream> implements Control
         return result;
     }
 
+    @SneakyThrows
     private void startStream(String streamUrl) {
         var stream = streamHandler.startStream(streamUrl);
-        var freq = Math.round(1000D / stream.getFps());
-        executorService.submit(stream::capture);
+        logger.debug("Starting stream!");
+        executor.submit(stream::capture);
     }
 
     private void stopStream() {
@@ -114,14 +105,16 @@ public class FlightController<S extends StreamHandler.Stream> implements Control
             logger.warn("No stream running!");
             return;
         }
-        System.out.println("We are before stop stream");
-        System.out.println("We are after stop stream");
+        logger.debug("Stopping stream");
         streamHandler.stopStream();
     }
 
     @Override
     public void close() throws Exception {
-        executorService.shutdown();
+        if (streamHandler.hasActiveStream()) {
+            streamHandler.stopStream();
+        }
+        executor.shutdown();
         commandChannel.close();
         statusChannel.close();
     }
