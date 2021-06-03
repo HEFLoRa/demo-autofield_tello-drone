@@ -1,4 +1,4 @@
-package de.tum.digitalagriculture.commanders;
+package de.tum.digitalagriculture.tello.commanders;
 
 import lombok.Getter;
 import lombok.NonNull;

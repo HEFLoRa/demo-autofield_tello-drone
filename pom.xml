@@ -118,7 +118,7 @@
                         <configuration>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>de.tum.digitalagriculture.commanders.CliCommander</mainClass>
+                                    <mainClass>de.tum.digitalagriculture.tello.commanders.CliCommander</mainClass>
                                 </transformer>
                             </transformers>
                         </configuration>
@@ -142,7 +142,7 @@
                         <argument>-classpath</argument>
                         <classpath></classpath>
                         <argument>-Djava.util.logging.config.file=${project.basedir}/src/main/resources/logging.properties/</argument>
-                        <argument>de.tum.digitalagriculture.commanders.CliCommander</argument>
+                        <argument>de.tum.digitalagriculture.tello.commanders.CliCommander</argument>
                     </arguments>
                 </configuration>
             </plugin>

@@ -1,6 +1,6 @@
-package de.tum.digitalagriculture.controllers;
+package de.tum.digitalagriculture.tello.controllers;
 
-import de.tum.digitalagriculture.commanders.Commands;
+import de.tum.digitalagriculture.tello.commanders.Commands;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.SneakyThrows;

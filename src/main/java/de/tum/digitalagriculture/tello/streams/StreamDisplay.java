@@ -1,27 +1,28 @@
-package de.tum.digitalagriculture.streams;
+package de.tum.digitalagriculture.tello.streams;
 
-import lombok.NonNull;
+import lombok.Getter;
 import lombok.SneakyThrows;
 import org.bytedeco.javacv.FFmpegFrameGrabber;
+import org.bytedeco.javacv.FrameGrabber;
 import org.bytedeco.javacv.OpenCVFrameConverter;
-import org.bytedeco.opencv.opencv_core.Mat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class StreamArray implements StreamHandler<StreamArray.Stream> {
-    private static final Logger logger = LoggerFactory.getLogger(StreamArray.class);
+import static org.bytedeco.opencv.global.opencv_highgui.*;
+
+public class StreamDisplay implements StreamHandler<StreamDisplay.Stream> {
+    private static final Logger logger = LoggerFactory.getLogger(StreamDisplay.class);
 
     private Stream stream;
 
-    public StreamArray() {
-        stream = null;
+    public StreamDisplay() {
+        this.stream = null;
     }
 
-    @SneakyThrows
     @Override
+    @SneakyThrows
     public Stream startStream(String streamUrl) {
         if (hasActiveStream()) {
             throw new IllegalStateException("startStream cannot be called if a stream is already running!");
@@ -34,8 +35,9 @@ public class StreamArray implements StreamHandler<StreamArray.Stream> {
 
     @Override
     public Boolean hasActiveStream() {
-        return null;
+        return stream != null && stream.isActive.get();
     }
+
 
     @Override
     public void stopStream() {
@@ -44,49 +46,53 @@ public class StreamArray implements StreamHandler<StreamArray.Stream> {
         }
     }
 
-    public static class Stream implements StreamHandler.Stream<ArrayList<Mat>> {
+    public static class Stream implements StreamHandler.Stream<Void> {
         private final AtomicBoolean isActive;
         private final FFmpegFrameGrabber capture;
-        private final OpenCVFrameConverter.ToMat converter;
-        private final ArrayList<Mat> data;
+        @Getter
+        private final Double fps;
 
         @SneakyThrows
-        private Stream(@NonNull String streamUrl) {
-            var url = streamUrl + "?overrun_nonfatal=1";
-            converter = new OpenCVFrameConverter.ToMat();
-            capture = new FFmpegFrameGrabber(url);
-            capture.setNumBuffers(1024);
+        private Stream(String streamUrl) {
+            // Use small buffer size to decrease latency
+            capture = new FFmpegFrameGrabber(streamUrl + "?fifo_size=0&overrun_nonfatal=1");
+            capture.setNumBuffers(0);
             capture.start();
-            data = new ArrayList<>();
+            fps = capture.getFrameRate();
             isActive = new AtomicBoolean(true);
-
         }
 
-        @SneakyThrows
         @Override
+        @SneakyThrows
         public void capture() {
             if (!capture.hasVideo()) {
                 throw new IllegalStateException("Capture not running!");
             }
+            var converter = new OpenCVFrameConverter.ToMat();
             while (capture.hasVideo() && isActive.get()) {
                 var frame = capture.grabImage();
                 var img = converter.convert(frame);
-                data.add(img);
+                imshow("Feed", img);
+                waitKey(1000 / fps.intValue());
             }
             capture.stop();
             capture.release();
+            destroyAllWindows();
         }
 
         @Override
-        public ArrayList<Mat> getData() {
-            return data;
+        public Void getData() {
+            return null;
         }
 
         @Override
-        public void close() throws Exception {
+        public void close() throws FrameGrabber.Exception {
             isActive.set(false);
             capture.stop();
             capture.release();
+            capture.close();
+            destroyAllWindows();
         }
     }
+
 }

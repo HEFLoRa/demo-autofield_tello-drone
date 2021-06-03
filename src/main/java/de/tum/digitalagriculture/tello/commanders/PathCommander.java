@@ -1,9 +1,9 @@
-package de.tum.digitalagriculture.commanders;
+package de.tum.digitalagriculture.tello.commanders;
 
-import de.tum.digitalagriculture.controllers.Controller;
-import de.tum.digitalagriculture.controllers.FlightController;
-import de.tum.digitalagriculture.controllers.Result;
-import de.tum.digitalagriculture.streams.StreamWriter;
+import de.tum.digitalagriculture.tello.controllers.Controller;
+import de.tum.digitalagriculture.tello.controllers.FlightController;
+import de.tum.digitalagriculture.tello.controllers.Result;
+import de.tum.digitalagriculture.tello.streams.StreamWriter;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
