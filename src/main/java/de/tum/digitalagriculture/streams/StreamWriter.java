@@ -41,9 +41,12 @@ public class StreamWriter implements StreamHandler<StreamWriter.Stream>, AutoClo
         return stream != null && stream.isActive.get();
     }
 
+
     @Override
     public void stopStream() {
-        stream.isActive.set(false);
+        if (stream != null) {
+            stream.isActive.set(false);
+        }
     }
 
     @Override
@@ -53,7 +56,7 @@ public class StreamWriter implements StreamHandler<StreamWriter.Stream>, AutoClo
         }
     }
 
-    protected class Stream implements StreamHandler.Stream {
+    public class Stream implements StreamHandler.Stream<String> {
         private final AtomicBoolean isActive;
         private final FFmpegFrameGrabber capture;
         private final VideoWriter writer;
@@ -74,7 +77,6 @@ public class StreamWriter implements StreamHandler<StreamWriter.Stream>, AutoClo
             var codec = VideoWriter.fourcc((byte) 'M', (byte) 'P', (byte) 'J', (byte) 'G');
             writer = new VideoWriter(filename, codec, fps, img.size(), true);
             isActive = new AtomicBoolean(true);
-
         }
 
         @SneakyThrows
@@ -91,6 +93,11 @@ public class StreamWriter implements StreamHandler<StreamWriter.Stream>, AutoClo
             capture.stop();
             capture.release();
             writer.release();
+        }
+
+        @Override
+        public String getData() {
+            return filename;
         }
 
         @Override

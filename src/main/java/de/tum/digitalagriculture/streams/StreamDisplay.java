@@ -23,7 +23,7 @@ public class StreamDisplay implements StreamHandler<StreamDisplay.Stream> {
 
     @Override
     @SneakyThrows
-    public Stream startStream(String streamUrl)  {
+    public Stream startStream(String streamUrl) {
         if (hasActiveStream()) {
             throw new IllegalStateException("startStream cannot be called if a stream is already running!");
         } else if (stream != null) {
@@ -38,12 +38,15 @@ public class StreamDisplay implements StreamHandler<StreamDisplay.Stream> {
         return stream != null && stream.isActive.get();
     }
 
+
     @Override
     public void stopStream() {
-        stream.isActive.set(false);
+        if (stream != null) {
+            stream.isActive.set(false);
+        }
     }
 
-    protected static class Stream implements StreamHandler.Stream {
+    public static class Stream implements StreamHandler.Stream<Void> {
         private final AtomicBoolean isActive;
         private final FFmpegFrameGrabber capture;
         @Getter
@@ -70,11 +73,16 @@ public class StreamDisplay implements StreamHandler<StreamDisplay.Stream> {
                 var frame = capture.grabImage();
                 var img = converter.convert(frame);
                 imshow("Feed", img);
-                waitKey(1000/fps.intValue());
+                waitKey(1000 / fps.intValue());
             }
             capture.stop();
             capture.release();
             destroyAllWindows();
+        }
+
+        @Override
+        public Void getData() {
+            return null;
         }
 
         @Override

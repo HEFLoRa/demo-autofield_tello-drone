@@ -1,6 +1,7 @@
 package de.tum.digitalagriculture.streams;
 
 
+@SuppressWarnings("rawtypes")
 public interface StreamHandler<S extends StreamHandler.Stream> {
     S startStream(String streamUrl);
 
@@ -8,7 +9,9 @@ public interface StreamHandler<S extends StreamHandler.Stream> {
 
     void stopStream();
 
-    interface Stream extends AutoCloseable {
+    interface Stream<D> extends AutoCloseable {
         void capture();
+
+        D getData();
     }
 }

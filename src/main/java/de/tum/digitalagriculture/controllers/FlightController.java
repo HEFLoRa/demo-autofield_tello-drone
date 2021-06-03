@@ -17,7 +17,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 
-public class FlightController<S extends StreamHandler.Stream> implements Controller, AutoCloseable {
+public class FlightController<D, S extends StreamHandler.Stream<D>> implements Controller, AutoCloseable {
     private static final Logger logger = LoggerFactory.getLogger(FlightController.class);
     @Getter
     private final ConnectionOption connectionOption;
@@ -29,6 +29,7 @@ public class FlightController<S extends StreamHandler.Stream> implements Control
     private final DatagramChannel statusChannel;
     private final ScheduledExecutorService executor;
     private final StreamHandler<S> streamHandler;
+    private S stream;
 
     public FlightController(String ip, ScheduledExecutorService executor, StreamHandler<S> streamHandler, ConnectionOption connectionOption) {
         this.connectionOption = connectionOption;
@@ -37,6 +38,7 @@ public class FlightController<S extends StreamHandler.Stream> implements Control
         commandChannel = createChannel(8889);
         statusChannel = createChannel(8890);
         this.streamHandler = streamHandler;
+        stream = null;
 
         this.executor = executor;
         if (connectionOption == ConnectionOption.KEEP_ALIVE) {
@@ -95,7 +97,7 @@ public class FlightController<S extends StreamHandler.Stream> implements Control
 
     @SneakyThrows
     private void startStream(String streamUrl) {
-        var stream = streamHandler.startStream(streamUrl);
+        stream = streamHandler.startStream(streamUrl);
         logger.debug("Starting stream!");
         executor.submit(stream::capture);
     }
@@ -107,6 +109,13 @@ public class FlightController<S extends StreamHandler.Stream> implements Control
         }
         logger.debug("Stopping stream");
         streamHandler.stopStream();
+    }
+
+    public D getStreamData() {
+        if (stream != null) {
+            return stream.getData();
+        }
+        return null;
     }
 
     @Override
