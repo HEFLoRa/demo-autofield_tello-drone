@@ -33,8 +33,8 @@
     </distributionManagement>
 
     <build>
-        <sourceDirectory>${project.build.directory}/delombok</sourceDirectory>
-        <testSourceDirectory>${project.build.directory}/test/delombok</testSourceDirectory>
+        <sourceDirectory>${project.build.directory}/generated-sources/delombok</sourceDirectory>
+        <testSourceDirectory>${project.build.directory}/generated-test-sources/delombok</testSourceDirectory>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -67,8 +67,7 @@
                             <goal>delombok</goal>
                         </goals>
                         <configuration>
-<!--                            <addOutputDirectory>false</addOutputDirectory>-->
-                            <outputDirectory>${project.build.directory}/delombok</outputDirectory>
+                            <addOutputDirectory>false</addOutputDirectory>
                             <sourceDirectory>src/main/java</sourceDirectory>
                         </configuration>
                     </execution>
@@ -79,8 +78,7 @@
                             <goal>testDelombok</goal>
                         </goals>
                         <configuration>
-<!--                            <addOutputDirectory>false</addOutputDirectory>-->
-                            <outputDirectory>${project.build.directory}/test/delombok</outputDirectory>
+                            <addOutputDirectory>false</addOutputDirectory>
                             <sourceDirectory>src/test/java</sourceDirectory>
                         </configuration>
                     </execution>
@@ -92,7 +90,7 @@
                 <version>3.2.0</version>
                 <configuration>
                     <defaultVersion>${project.version}</defaultVersion>
-                    <sourcepath>${project.build.directory}/delombok</sourcepath>
+                    <sourcepath>${project.build.directory}/generated-sources/delombok</sourcepath>
                 </configuration>
             </plugin>
             <plugin>
