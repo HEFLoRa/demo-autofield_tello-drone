@@ -187,12 +187,15 @@ public class FlightController<D, S extends StreamHandler.Stream<D>> implements C
 
     /**
      * Options how the connection to the drone should be handled
-     * <ul>
-     *     <li>{@code KEEP_ALIVE}: send a command every 10s to keep the connection alive</ul>
-     *     <li>{@code TIME_OUT}: time the connection after 15s out</ul>
-     * </ul>
      */
     public enum ConnectionOption {
-        KEEP_ALIVE, TIME_OUT
+        /**
+         * send a command every 10s to keep the connection alive
+         */
+        KEEP_ALIVE,
+        /**
+         * time the connection after 15s out
+         */
+        TIME_OUT
     }
 }
