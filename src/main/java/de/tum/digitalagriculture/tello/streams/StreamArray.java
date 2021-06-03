@@ -11,6 +11,9 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+/**
+ * A stream handler that creates a stream that writes its data to an array
+ */
 public class StreamArray implements StreamHandler<StreamArray.Stream> {
     private static final Logger logger = LoggerFactory.getLogger(StreamArray.class);
 
@@ -44,6 +47,9 @@ public class StreamArray implements StreamHandler<StreamArray.Stream> {
         }
     }
 
+    /**
+     * Stream that writes image data to an array
+     */
     public static class Stream implements StreamHandler.Stream<ArrayList<Mat>> {
         private final AtomicBoolean isActive;
         private final FFmpegFrameGrabber capture;
@@ -77,6 +83,11 @@ public class StreamArray implements StreamHandler<StreamArray.Stream> {
             capture.release();
         }
 
+        /**
+         * Read the stream as an image array
+         *
+         * @return the stream as an image array
+         */
         @Override
         public ArrayList<Mat> getData() {
             return data;

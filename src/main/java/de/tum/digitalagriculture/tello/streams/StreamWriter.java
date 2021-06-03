@@ -12,6 +12,9 @@ import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
+/**
+ * Creates a stream that writes its data to disk
+ */
 public class StreamWriter implements StreamHandler<StreamWriter.Stream>, AutoCloseable {
     private static final Logger logger = LoggerFactory.getLogger(StreamWriter.class);
     @Getter
@@ -19,6 +22,11 @@ public class StreamWriter implements StreamHandler<StreamWriter.Stream>, AutoClo
     private String filename;
     private Stream stream;
 
+    /**
+     * Create a new StreamWriter
+     *
+     * @param filename The filename of the file the video should be stored in
+     */
     public StreamWriter(String filename) {
         this.filename = filename;
         stream = null;
@@ -56,6 +64,9 @@ public class StreamWriter implements StreamHandler<StreamWriter.Stream>, AutoClo
         }
     }
 
+    /**
+     * Captures images and writes them to disk
+     */
     public class Stream implements StreamHandler.Stream<String> {
         private final AtomicBoolean isActive;
         private final FFmpegFrameGrabber capture;

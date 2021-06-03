@@ -1,8 +1,6 @@
 package de.tum.digitalagriculture.tello.commanders;
 
-import de.tum.digitalagriculture.tello.controllers.Controller;
 import de.tum.digitalagriculture.tello.controllers.FlightController;
-import de.tum.digitalagriculture.tello.controllers.Result;
 import de.tum.digitalagriculture.tello.streams.StreamWriter;
 import lombok.Getter;
 import lombok.NonNull;
@@ -11,18 +9,31 @@ import lombok.SneakyThrows;
 import org.bytedeco.javacpp.Loader;
 import org.bytedeco.opencv.opencv_java;
 
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
+/**
+ * Executes the commands provided by {@code commands}
+ */
 public class PathCommander implements Commander {
-    @Getter
-    private final Controller controller;
+    /**
+     * Commands of the {@link PathCommander}
+     *
+     * @param commands set the commands
+     * @return commands that the {@link PathCommander} executes
+     */
     @Getter
     @Setter
     private Commands.Command[] commands;
+    private Iterator<Commands.Command> iter;
 
-    public PathCommander(@NonNull Controller controller, @NonNull Commands.Command... commands) {
-        this.controller = controller;
+    /**
+     * @param commands Commands to execute
+     */
+    public PathCommander(@NonNull Commands.Command... commands) {
         this.commands = commands;
+        iter = Arrays.stream(commands).iterator();
     }
 
     @SneakyThrows
@@ -43,22 +54,26 @@ public class PathCommander implements Commander {
         var executor = new ScheduledThreadPoolExecutor(8);
         var streamHandler = new StreamWriter("/tmp/flight0.avi");
         var controller = new FlightController<>("192.168.10.1", executor, streamHandler, FlightController.ConnectionOption.TIME_OUT);
-        var commander = new PathCommander(controller, commands);
-        commander.run();
+        var commander = new PathCommander(commands);
+        commander.forEachRemaining(controller);
         streamHandler.close();
         controller.close();
     }
 
-    @Override
-    public Result execute(Commands.Command command) {
-        return controller.execute(command);
+    /**
+     * Restart the iterator
+     */
+    public void restart() {
+        iter = Arrays.stream(commands).iterator();
     }
 
     @Override
-    public void run() {
-        for (var command : commands) {
-            execute(command);
-        }
-        System.out.println("Finished");
+    public boolean hasNext() {
+        return iter.hasNext();
+    }
+
+    @Override
+    public Commands.Command next() {
+        return iter.next();
     }
 }

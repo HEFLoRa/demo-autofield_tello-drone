@@ -80,6 +80,11 @@ public class StreamDisplay implements StreamHandler<StreamDisplay.Stream> {
             destroyAllWindows();
         }
 
+        /**
+         * Get the associated data of the stream. In this case nothing because the stream is displayed on screen
+         *
+         * @return null
+         */
         @Override
         public Void getData() {
             return null;
