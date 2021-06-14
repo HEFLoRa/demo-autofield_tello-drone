@@ -1,6 +1,6 @@
 package de.tum.digitalagriculture.tello.commanders;
 
-import de.tum.digitalagriculture.tello.controllers.FlightController;
+import de.tum.digitalagriculture.tello.controllers.PrintController;
 import de.tum.digitalagriculture.tello.streams.StreamWriter;
 import lombok.Getter;
 import lombok.NonNull;
@@ -12,6 +12,7 @@ import org.bytedeco.opencv.opencv_java;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Executes the commands provided by {@code commands}
@@ -53,11 +54,12 @@ public class PathCommander implements Commander {
         };
         var executor = new ScheduledThreadPoolExecutor(8);
         var streamHandler = new StreamWriter("/tmp/flight0.avi");
-        var controller = new FlightController<>("192.168.10.1", executor, streamHandler, FlightController.ConnectionOption.TIME_OUT);
+//        var controller = new FlightController<>("192.168.10.1", executor, streamHandler, FlightController.ConnectionOption.TIME_OUT);
+        var controller = new PrintController(100, TimeUnit.MILLISECONDS);
         var commander = new PathCommander(commands);
         commander.forEachRemaining(controller);
         streamHandler.close();
-        controller.close();
+//        controller.close();
     }
 
     /**

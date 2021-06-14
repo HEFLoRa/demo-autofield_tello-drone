@@ -1,6 +1,6 @@
 package de.tum.digitalagriculture.tello.commanders;
 
-import de.tum.digitalagriculture.tello.controllers.FlightController;
+import de.tum.digitalagriculture.tello.controllers.PrintController;
 import de.tum.digitalagriculture.tello.streams.StreamWriter;
 import lombok.Cleanup;
 import lombok.SneakyThrows;
@@ -13,6 +13,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -36,8 +37,8 @@ public class CliCommander implements Commander, AutoCloseable {
         }
         var executor = new ScheduledThreadPoolExecutor(8);
         var streamHandler = new StreamWriter("/tmp/capture0.avi");
-        @Cleanup var controller = new FlightController<>(ip, executor, streamHandler, FlightController.ConnectionOption.KEEP_ALIVE);
-//        var controller = new PrintController(500, TimeUnit.MILLISECONDS);
+//        @Cleanup var controller = new FlightController<>(ip, executor, streamHandler, FlightController.ConnectionOption.KEEP_ALIVE);
+        var controller = new PrintController(500, TimeUnit.MILLISECONDS);
         @Cleanup var commander = new CliCommander();
         commander.forEachRemaining(controller);
     }
@@ -63,9 +64,17 @@ public class CliCommander implements Commander, AutoCloseable {
         System.out.println("Please enter your command:");
         var input = reader.readLine();
         if (input.equals("end")) {
+            logger.info("Finished!");
             return null;
         }
-        nextCommand = Commands.Command.parse(input);
+        Commands.Command command;
+        try {
+            command = Commands.Command.parse(input);
+        } catch (IllegalArgumentException iae) {
+            logger.warn(String.format("Erroneous command: %s", input));
+            command = getNextCommand();
+        }
+        nextCommand = command;
         return nextCommand;
     }
 
